@@ -1,70 +1,42 @@
 package com.ebmdev.users.services;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import javax.annotation.PostConstruct;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ebmdev.users.models.User;
-import com.github.javafaker.Faker;
+import com.ebmdev.users.entities.User;
+import com.ebmdev.users.repositories.UserRepository;
 
 @Service
 public class UserService {
 
 	@Autowired
-	private Faker faker;
+	private UserRepository repository;
 
-	private List<User> users = new ArrayList<>();
-
-	@PostConstruct
-	public void init() {
-		for (int i = 0; i < 100; i++) {
-			users.add(new User(faker.funnyName().name(), faker.name().username(), faker.dragonBall().character()));
-		}
+	public Page<User> getUsers(int page, int size) {
+		return repository.findAll(PageRequest.of(page, size));
 	}
 
-	public List<User> getUsers(String startWith) {
-		if (Objects.nonNull(startWith)) {
-			return users.stream().filter(u -> u.getUsername().startsWith(startWith)).collect(Collectors.toList());
-		} else {
-			return users;
-		}
+	public Page<String> getUsernames(int page, int size) {
+		return repository.findUsernames(PageRequest.of(page, size));
+	}
+
+	public User getUserById(Integer userId) {
+		return repository.findById(userId).orElseThrow(
+				() -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("User %d not found", userId)));
 	}
 
 	public User getUserByUsername(String username) {
-		return users.stream().filter(u -> u.getUsername().equals(username)).findAny().orElseThrow(
-				() -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("User %s not found.", username)));
+		return repository.findByUsername(username).orElseThrow(
+				() -> new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("User %s not found", username)));
 	}
 
-	public User createUser(User user) {
-		if (users.stream().anyMatch(u -> u.getUsername().equals(user.getUsername()))) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT,
-					String.format("User %s already exists", user.getUsername()));
-		}
-
-		users.add(user);
-		return user;
-	}
-
-	public User updateUser(User user) {
-		User userToBeUpdated = getUserByUsername(user.getUsername());
-
-		userToBeUpdated.setNickName(user.getNickName());
-		userToBeUpdated.setUsername(user.getUsername());
-		userToBeUpdated.setPassword(user.getPassword());
-
-		return userToBeUpdated;
-	}
-
-	public void deleteUser(String username) {
-		User userToBeDeleted = getUserByUsername(username);
-		users.remove(userToBeDeleted);
+	public User getUserByUsernameAndPassword(String username, String password) {
+		return repository.findByUsernameAndPassword(username, password)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+						String.format("User %s with password %s not found", username, password)));
 	}
 }
