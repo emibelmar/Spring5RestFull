@@ -10,6 +10,7 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 
+import com.ebmdev.di.aop.TargetObject;
 import com.ebmdev.di.attribute.Coche;
 import com.ebmdev.di.autowire.CalculadoraAreaService;
 import com.ebmdev.di.constructor.Coche1;
@@ -74,10 +75,12 @@ public class DependencyInjectionApplication {
 		ExpressionParser parser = new SpelExpressionParser();
 		Expression expression = parser.parseExpression("10 eq 20");
 		log.info("Resultado = {}", expression.getValue());
-		
-		
+
 		LifeCycleBean bean = context.getBean(LifeCycleBean.class);
-		
+
+		TargetObject targetObject = context.getBean(TargetObject.class);
+		targetObject.hello("Hello world");
+
 	}
 
 	@Bean
